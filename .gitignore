@@ -5,3 +5,6 @@ __pycache__/
 .env
 .idea/
 .vscode/
+airline/data/
+airline/oof/
+airline/submissions/
