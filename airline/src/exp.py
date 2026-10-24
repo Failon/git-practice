@@ -29,15 +29,67 @@ LGB_PARAMS = dict(n_estimators=10000, learning_rate=0.05, num_leaves=63, min_chi
 RATING_PAIRS = list(itertools.combinations(RATING_COLS + ["Class", "Type of Travel"], 2))
 
 
-def count_encode(full: pd.DataFrame, cols) -> pd.DataFrame:
-    """Frequency of each value (and of rating pairs) over train+test."""
-    out = pd.DataFrame(index=full.index)
-    for c in cols:
-        out[f"cnt_{c}"] = full[c].map(full[c].value_counts())
-    for a, b in RATING_PAIRS:
-        key = full[a].astype(str) + "_" + full[b].astype(str)
-        out[f"cnt_{a}|{b}"] = key.map(key.value_counts())
+ALL_COLS = RATING_COLS + CAT_COLS + NUM_COLS
+TOP_COLS = ["Inflight wifi service", "Online boarding", "Ease of Online booking",
+            "Inflight entertainment", "Seat comfort", "Type of Travel", "Class", "Customer Type"]
+
+
+def group_counts(full: pd.DataFrame, groups) -> pd.DataFrame:
+    """Frequency over train+test of each tuple of columns in `groups`."""
+    codes = {c: pd.factorize(full[c].fillna(-1))[0].astype(np.int64) for c in ALL_COLS}
+    out = {}
+    for g in groups:
+        key = np.zeros(len(full), dtype=np.int64)
+        for c in g:
+            key = key * (codes[c].max() + 1) + codes[c]
+        _, inv, cnt = np.unique(key, return_inverse=True, return_counts=True)
+        out["cnt_" + "|".join(g)] = cnt[inv]
+    return pd.DataFrame(out, index=full.index)
+
+
+COUNT_SETS = {
+    "single": [(c,) for c in RATING_COLS + NUM_COLS],
+    "num": [(c,) for c in NUM_COLS],
+    "rate": [(c,) for c in RATING_COLS],
+    "numcat": [(c,) for c in NUM_COLS] + [(n, c) for n in NUM_COLS for c in CAT_COLS],
+    "single_rk": [(c,) for c in RATING_COLS + NUM_COLS] + [tuple(RATING_COLS)],
+    "pairs": [(c,) for c in RATING_COLS + NUM_COLS] + RATING_PAIRS,
+    "allpairs": [(c,) for c in ALL_COLS] + list(itertools.combinations(ALL_COLS, 2)),
+    "triples": ([(c,) for c in RATING_COLS + NUM_COLS] + RATING_PAIRS
+                + list(itertools.combinations(TOP_COLS, 3))),
+    "rowkey": ([(c,) for c in RATING_COLS + NUM_COLS] + RATING_PAIRS
+               + [tuple(RATING_COLS), tuple(RATING_COLS + CAT_COLS), tuple(CAT_COLS)]),
+}
+
+
+def with_counts(train, test, name):
+    full = pd.concat([train, test], ignore_index=True)
+    ce = group_counts(full, COUNT_SETS[name])
+    return (pd.concat([train, ce.iloc[:len(train)].reset_index(drop=True)], axis=1),
+            pd.concat([test, ce.iloc[len(train):].reset_index(drop=True)], axis=1))
+
+
+def orig_stats(train, test, orig, cols=NUM_COLS + RATING_COLS, smooth=10):
+    """Per-value count and smoothed satisfaction rate taken from the original dataset."""
+    prior = orig[TARGET].mean()
+    out = []
+    for df in (train, test):
+        df = df.copy()
+        for c in cols:
+            st = orig.groupby(c)[TARGET].agg(["sum", "count"])
+            df[f"ocnt_{c}"] = df[c].map(st["count"]).fillna(0)
+            df[f"ote_{c}"] = df[c].map((st["sum"] + prior * smooth) / (st["count"] + smooth)).fillna(prior)
+        out.append(df)
     return out
+
+
+def num_cat_keys(df: pd.DataFrame) -> pd.DataFrame:
+    """Numeric values alone and crossed with the main categoricals."""
+    keys = df[NUM_COLS].copy()
+    for n in ["Age", "Flight Distance"]:
+        for c in CAT_COLS:
+            keys[f"{n}|{c}"] = df[n] * 10 + df[c]
+    return keys
 
 
 def pair_keys(df: pd.DataFrame) -> pd.DataFrame:
@@ -66,7 +118,8 @@ def target_encode(tr_keys, ytr, ap_keys, smooth=20, inner=5):
             pd.DataFrame(ap_out, columns=cols, index=ap_keys.index))
 
 
-def run(name, train, test, orig=None, cat_cols=None, te=False, params=None):
+def run(name, train, test, orig=None, cat_cols=None, te=None, params=None):
+    """te: function df -> DataFrame of keys to target-encode inside each fold."""
     params = {**LGB_PARAMS, **(params or {})}
     feats = [c for c in train.columns if c not in ("id", TARGET)]
     X, Xte, y = train[feats], test[feats], train[TARGET].values
@@ -85,9 +138,9 @@ def run(name, train, test, orig=None, cat_cols=None, te=False, params=None):
             Xtr = pd.concat([Xtr, orig[feats].astype(Xtr.dtypes.to_dict())], ignore_index=True)
             ytr = np.concatenate([ytr, orig[TARGET].values])
         if te:
-            ktr = pair_keys(Xtr.reset_index(drop=True))
-            t_tr, t_va = target_encode(ktr, ytr, pair_keys(Xva))
-            _, t_te = target_encode(ktr, ytr, pair_keys(Xte), inner=2)
+            ktr = te(Xtr.reset_index(drop=True))
+            t_tr, t_va = target_encode(ktr, ytr, te(Xva))
+            _, t_te = target_encode(ktr, ytr, te(Xte), inner=2)
             Xtr = pd.concat([Xtr.reset_index(drop=True), t_tr], axis=1)
             Xva = pd.concat([Xva, t_va], axis=1)
             Xte_k = pd.concat([Xte, t_te], axis=1)
@@ -122,13 +175,19 @@ def main():
         elif e == "catfeat":
             run("lgb_catfeat", train, test, cat_cols=CAT_COLS + RATING_COLS)
         elif e == "count":
-            full = pd.concat([train, test], ignore_index=True)
-            ce = count_encode(full, RATING_COLS + NUM_COLS)
-            tr2 = pd.concat([train, ce.iloc[:len(train)].reset_index(drop=True)], axis=1)
-            te2 = pd.concat([test, ce.iloc[len(train):].reset_index(drop=True)], axis=1)
-            run("lgb_count", tr2, te2)
+            run("lgb_count", *with_counts(train, test, "pairs"))
+        elif e.startswith("cnt_"):
+            run(f"lgb_{e}", *with_counts(train, test, e[4:]))
         elif e == "te":
-            run("lgb_te", train, test, te=True)
+            run("lgb_te", train, test, te=pair_keys)
+        elif e == "numte":
+            run("lgb_numte", *with_counts(train, test, "num"), te=lambda d: d[NUM_COLS])
+        elif e == "combo":
+            run("lgb_combo", *orig_stats(*with_counts(train, test, "num"), orig), te=lambda d: d[NUM_COLS])
+        elif e == "numte2":
+            run("lgb_numte2", *orig_stats(*with_counts(train, test, "num"), orig), te=num_cat_keys)
+        elif e == "origstat":
+            run("lgb_origstat", *orig_stats(*with_counts(train, test, "num"), orig))
         elif e == "slow":
             run("lgb_slow", train, test, params=dict(learning_rate=0.02, num_leaves=31,
                                                       min_child_samples=100, colsample_bytree=0.5))
