@@ -78,6 +78,8 @@ def run(kind, spec, seed=SEED, name=None, params=None, folds=5):
         oof[va] = p_va
         pred += p_te / folds
         its.append(it)
+        print(f"  fold {len(its) - 1}: AUC={roc_auc_score(y[va], p_va):.5f} iters={it} "
+              f"({time.time() - t0:.0f}s)", flush=True)
     auc = roc_auc_score(y, oof)
     name = name or f"{kind}__{spec}__s{seed}"
     print(f"{name:40s} AUC={auc:.5f} nfeat={Xtr.shape[1]} iters={its} ({time.time() - t0:.0f}s)", flush=True)
