@@ -14,7 +14,7 @@ RATING_COLS = [
     "Inflight wifi service", "Departure/Arrival time convenient", "Ease of Online booking",
     "Gate location", "Food and drink", "Online boarding", "Seat comfort",
     "Inflight entertainment", "On-board service", "Leg room service",
-    "Baggage handling", "Checkin service", "Inflight service", "Cleanliness",
+    "Baggage handling", "Checkin service", "Cleanliness",
 ]
 NUM_COLS = ["Age", "Flight Distance", "Departure Delay in Minutes", "Arrival Delay in Minutes"]
 
@@ -34,7 +34,7 @@ def load_original() -> pd.DataFrame:
     """Original Airline Passenger Satisfaction dataset (train+test merged, ~130k rows)."""
     d = DATA / "original"
     df = pd.concat([pd.read_csv(d / "train.csv"), pd.read_csv(d / "test.csv")], ignore_index=True)
-    df = _clean(df).drop(columns=["id"])
+    df = _clean(df).drop(columns=["id", "Inflight service"])
     df[TARGET] = _encode_target(df[TARGET])
     return df
 
