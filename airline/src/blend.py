@@ -55,10 +55,30 @@ def main():
 
     w, score = hill_climb(oofs, y)
     print("weights:", {k: round(v, 3) for k, v in w.items()})
-    print(f"blend OOF AUC = {score:.5f}")
+    print(f"hill-climb OOF AUC = {score:.5f}")
+
+    # stacking: logistic regression on logits, scored with its own outer CV
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import StratifiedKFold, cross_val_predict
+
+    def logit(p):
+        p = np.clip(p, 1e-6, 1 - 1e-6)
+        return np.log(p / (1 - p))
+
+    Z = np.column_stack([logit(oofs[n]) for n in names])
+    Zte = np.column_stack([logit(np.load(OUT / f"{n}_test.npy")) for n in names])
+    lr = LogisticRegression(C=0.1, max_iter=2000)
+    cv = StratifiedKFold(5, shuffle=True, random_state=7)
+    stack_score = roc_auc_score(y, cross_val_predict(lr, Z, y, cv=cv, method="predict_proba")[:, 1])
+    print(f"LR-stack OOF AUC = {stack_score:.5f}")
 
     _, _, sub = load_comp()
-    sub["satisfaction"] = sum(wt * rank(np.load(OUT / f"{n}_test.npy")) for n, wt in w.items())
+    if stack_score > score:
+        sub["satisfaction"] = lr.fit(Z, y).predict_proba(Zte)[:, 1]
+        print("using LR stack")
+    else:
+        sub["satisfaction"] = sum(wt * rank(np.load(OUT / f"{n}_test.npy")) for n, wt in w.items())
+        print("using hill-climb blend")
     path = ROOT / "submissions" / args.out
     path.parent.mkdir(exist_ok=True)
     sub.to_csv(path, index=False)
