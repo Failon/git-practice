@@ -5,6 +5,7 @@ Usage:
     python src/train.py xgb cnt+orig2+tecore --seed 1
 """
 import argparse
+import json
 import time
 import warnings
 
@@ -88,9 +89,19 @@ def main():
     ap.add_argument("kind", choices=list(PARAMS))
     ap.add_argument("specs", nargs="+")
     ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--tuned", action="store_true", help="use params/<kind>__<spec>.json from tune.py")
+    ap.add_argument("--lr", type=float, default=None)
     args = ap.parse_args()
     for spec in args.specs:
-        run(args.kind, spec, seed=args.seed)
+        params, tag = {}, ""
+        if args.tuned:
+            params = json.loads((ROOT / "params" / f"{args.kind}__{spec}.json").read_text())
+            tag = "tuned_"
+        if args.lr:
+            params["learning_rate"] = args.lr
+            tag += f"lr{args.lr}_"
+        run(args.kind, spec, seed=args.seed, params=params,
+            name=f"{args.kind}__{tag}{spec}__s{args.seed}")
 
 
 if __name__ == "__main__":
