@@ -15,7 +15,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import TargetEncoder
 
-from common import ROOT, SEED
+from common import CAT_COLS, RATING_COLS, ROOT, SEED
 from fe import build
 
 warnings.filterwarnings("ignore")
@@ -29,7 +29,7 @@ PARAMS = {
                 subsample=0.8, colsample_bytree=0.7, reg_lambda=2.0, tree_method="hist",
                 eval_metric="auc", early_stopping_rounds=200),
     "cat": dict(iterations=20000, learning_rate=0.08, depth=7, l2_leaf_reg=3, eval_metric="AUC",
-                od_type="Iter", od_wait=200, verbose=0),
+                od_type="Iter", od_wait=200, verbose=0, thread_count=2, border_count=128),
 }
 
 
@@ -47,8 +47,11 @@ def fit_predict(kind, params, seed, Xtr, ytr, Xva, yva, Xte):
         it = m.best_iteration
     else:
         from catboost import CatBoostClassifier
-        m = CatBoostClassifier(**params, random_seed=seed, thread_count=-1, allow_writing_files=False)
-        m.fit(Xtr, ytr, eval_set=(Xva, yva), use_best_model=True)
+        # ratings, categoricals and Age/Distance (as route id) go in as native categorical features
+        cats = CAT_COLS + RATING_COLS + ["Age", "Flight Distance"]
+        Xtr, Xva, Xte = (pd.concat([X, X[cats].add_prefix("c_").astype(int)], axis=1) for X in (Xtr, Xva, Xte))
+        m = CatBoostClassifier(**params, random_seed=seed, allow_writing_files=False)
+        m.fit(Xtr, ytr, cat_features=[f"c_{c}" for c in cats], eval_set=(Xva, yva), use_best_model=True)
         it = m.get_best_iteration()
     return m.predict_proba(Xva)[:, 1], m.predict_proba(Xte)[:, 1], it
 
