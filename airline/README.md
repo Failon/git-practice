@@ -155,3 +155,20 @@ python airline/src/mvp.py --data comp
 - предсказание модели, обученной только на оригинале (сама 0.953 на синтетике, в стеке +0).
 
 Бленд всех: **OOF 0.96105** → `submissions/sub_v4_blend.csv`.
+
+## Доводка 3: CatBoost и тюнинг
+
+| модель | OOF AUC | время |
+|---|---|---|
+| **CatBoost cnt+te** (рейтинги, категории, Age и Distance как native categorical) | **0.96070** | 2.7 ч |
+| CatBoost cnt+route+te | 0.96070 | 2.8 ч |
+| LightGBM cnt+orig2+route+te, параметры Optuna (lr 0.06) | 0.96062 | 2 ч |
+| LightGBM cnt+orig2+route+te, параметры по умолчанию | 0.96063 | — |
+
+- CatBoost с native categorical — лучшая одиночная модель при всего 29 числовых признаках,
+  и самая непохожая на LightGBM: в бленде получает наибольший вес.
+- Optuna (30 попыток на одном фолде, подвыборка 300k) нашла +0.0002 на этом фолде, на 5 фолдах — 0;
+  выигрыш оказался шумом.
+
+Бленд: **OOF 0.96119** → `submissions/sub_v6_blend.csv`
+(CatBoost ×2 ≈ 39%, LightGBM ≈ 39%, XGBoost 11%, NN 6%).
