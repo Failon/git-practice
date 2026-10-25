@@ -36,6 +36,13 @@ PARAMS = {
 def fit_predict(kind, params, seed, Xtr, ytr, Xva, yva, Xte):
     if kind == "lgb":
         import lightgbm as lgb
+        cats = [c for c in Xtr.columns if c.startswith("c_")]
+        if cats:
+            # shared category sets across train/valid/test so codes agree
+            Xtr, Xva, Xte = Xtr.copy(), Xva.copy(), Xte.copy()
+            for c in cats:
+                dt = pd.CategoricalDtype(sorted(set(Xtr[c]) | set(Xva[c]) | set(Xte[c])))
+                Xtr[c], Xva[c], Xte[c] = Xtr[c].astype(dt), Xva[c].astype(dt), Xte[c].astype(dt)
         m = lgb.LGBMClassifier(**params, random_state=seed)
         m.fit(Xtr, ytr, eval_set=[(Xva, yva)], eval_metric="auc",
               callbacks=[lgb.early_stopping(200, verbose=False)])

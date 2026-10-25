@@ -125,7 +125,14 @@ def te_dig(d: Data):
     return keys
 
 
+def block_ncat(d: Data):
+    """Copies of numeric columns and ratings marked 'c_' -> treated as native categoricals by train.py."""
+    comp = d.comp()
+    return pd.DataFrame({f"c_{c}": comp[c].fillna(-1).astype(int) for c in NUM_COLS + RATING_COLS})
+
+
 BLOCKS = {
+    "ncat": block_ncat,
     "dig": block_dig,
     "cnt": block_cnt,
     "orig": block_orig,
