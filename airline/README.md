@@ -22,6 +22,9 @@ airline/
   src/train.py     lgb/xgb/cat на любой комбинации блоков: `python src/train.py lgb cnt+orig2+route+te`
   src/nn.py        MLP с эмбеддингами для каждой колонки
   src/blend.py     hill climbing по рангам + LR-стекинг по логитам, пишет сабмит
+  src/stack.py     LR-стек по нашим OOF + публичным библиотекам OOF (data/ext)
+  src/stack_gbdt.py  LightGBM-стекер второго уровня
+  src/tune.py      Optuna на одном фолде
   oof/             OOF-предсказания (не в git)
 ```
 
@@ -172,3 +175,26 @@ python airline/src/mvp.py --data comp
 
 Бленд: **OOF 0.96119** → `submissions/sub_v6_blend.csv`
 (CatBoost ×2 ≈ 39%, LightGBM ≈ 39%, XGBoost 11%, NN 6%).
+
+## Лидерборд и публичные OOF
+
+Публичные скоры (около 20% test): **v6** (наш бленд, CV 0.96119) → **0.96079**, ~1072/2978;
+**v7** (LR-стек, CV 0.96210) → **0.96174**, ~684/2978. LB ≈ CV − 0.0004.
+
+Лидерборд: 1 место 0.96416 (Masaya Kawamata, публичного ноутбука по S6E10 нет), 2 место 0.96352,
+дальше плотная группа: 256 команд ≥ 0.962. Эта группа — стекинг публичных OOF: датасеты Chris Deotte
+(`cdeotte/s6e10-124-public-oof-and-test-predictions`, `cdeotte/s6e10-tfm-oof-and-test-predictions`),
+124 публичные модели + 13 табличных foundation-моделей (TabPFN, TabFM, LimiX и др.).
+Часть ноутбуков в группе подогнана под public LB (веса смеси чужих сабмитов по public score) — не используем.
+
+| стек | OOF AUC |
+|---|---|
+| LR по 166 моделям (наши 31 + публичные), C 0.01–1 | **0.96210** |
+| LR только по публичным | 0.96209 |
+| LightGBM-стекер, топ-40 моделей | 0.96194 |
+| LightGBM-стекер, топ-40 + сырые признаки | 0.96191 |
+| LR + LightGBM-стекер | 0.96211 |
+
+- Лучшие одиночные публичные модели — RealMLP (~0.9614); в стеке наибольший вес у RealMLP и TFM.
+- Наши модели к публичной библиотеке почти ничего не добавляют (+0.00001).
+- LightGBM с числами/рейтингами как native categorical (`ncat`, с регуляризацией категорий): 0.96009 — хуже базового.
