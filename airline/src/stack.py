@@ -33,6 +33,10 @@ def to_logit(oof, test):
     return logit(oof), logit(test)
 
 
+# stack-level OOFs (other people's stackers / blends): inflate nested CV when re-stacked
+META = {"stack245", "nj_01", "blend01", "blend02", "blend03", "blend04", "blend05", "blend06", "blend07"}
+
+
 def load_sets(use_ext, y, nte):
     names, oofs, tests = [], [], []
     for f in sorted(OUT.glob("*_oof.npy")):
@@ -46,7 +50,7 @@ def load_sets(use_ext, y, nte):
             for f in sorted(d.glob("oof_*.npy")):
                 n = f.name[4:-4]
                 t = d / f"test_{n}.npy"
-                if not t.exists():
+                if not t.exists() or n in META:
                     continue
                 o, te = np.load(f, allow_pickle=False).ravel(), np.load(t, allow_pickle=False).ravel()
                 if o.shape != y.shape or te.shape != (nte,) or not (np.isfinite(o).all() and np.isfinite(te).all()):
