@@ -1,0 +1,10 @@
+{
+ "learning_rate": 0.03,
+ "num_leaves": 63,
+ "min_child_samples": 100,
+ "colsample_bytree": 0.5,
+ "cat_smooth": 50,
+ "cat_l2": 10,
+ "min_data_per_group": 200,
+ "max_cat_threshold": 64
+}
