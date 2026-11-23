@@ -25,6 +25,7 @@ function draw(previous=[],fraction=1){
   });
 }
 function update(){
+  el("start").textContent=sim.status==="Завершено" ? "Старт на новой карте" : "Старт";
   el("history").max=timeline.frames.length-1;
   el("history").value=timeline.index;
   el("frame").textContent=timeline.index+" / "+(timeline.frames.length-1);
@@ -61,7 +62,24 @@ function advance(){
   animation=requestAnimationFrame(frame);
   if(sim.status==="Завершено") pause();
 }
-el("start").onclick=()=>{if(!timer && ["Готово","Движение"].includes(sim.status)){timer=setInterval(advance,300);advance();}};
+function newMap(){
+  let seed=crypto.getRandomValues(new Uint32Array(1))[0];
+  let next=Swarm.generate(seed);
+  while(map && next.rows.join("")===map.rows.join("")){
+    seed=(seed+1)>>>0;
+    next=Swarm.generate(seed);
+  }
+  el("seed").value=seed;
+  loadMap(next);
+}
+el("fresh").onclick=newMap;
+el("start").onclick=()=>{
+  if(sim.status==="Завершено") newMap();
+  if(!timer && ["Готово","Движение"].includes(sim.status)){
+    timer=setInterval(advance,300);
+    advance();
+  }
+};
 el("step").onclick=()=>{pause();advance();};
 el("stop").onclick=()=>{pause();if(sim.status==="Движение") el("log").textContent="Пауза · Такт "+sim.tick;};
 el("reset").onclick=reset;el("count").onchange=reset;
@@ -131,4 +149,4 @@ el("conflict").onclick=()=>{
   seek(timeline.index);
   if(sim.status==="Завершено" && sim.waits===0) el("log").textContent+=" · Никому не пришлось ждать.";
 };
-openShow();
+newMap();

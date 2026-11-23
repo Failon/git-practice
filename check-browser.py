@@ -18,6 +18,8 @@ for source in ("core.js", "demo.js", "ui.js"):
 test = """
 <script>
 const button = id => document.getElementById(id);
+button('fresh').click();
+button('openShow').click();
 button('conflict').click();
 if (!button('log').textContent.includes('Дрон 5 ждёт')) throw Error('Conflict display');
 button('compare').click();
