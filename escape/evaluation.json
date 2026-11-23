@@ -1,0 +1,47 @@
+{
+  "seeds": [
+    200000,
+    200999
+  ],
+  "maps": 1000,
+  "scores": {
+    "initial": {
+      "mean": 32.171,
+      "full": 10
+    },
+    "stage1": {
+      "mean": 126.086,
+      "full": 383
+    },
+    "stage2": {
+      "mean": 147.233,
+      "full": 537
+    },
+    "stage3": {
+      "mean": 155.759,
+      "full": 608
+    },
+    "distance": {
+      "mean": 150.815,
+      "full": 551
+    }
+  },
+  "beforeAfter": {
+    "mean": 123.588,
+    "ci95": [
+      119.361,
+      127.878
+    ],
+    "wins": 958,
+    "ties": 20
+  },
+  "againstDistance": {
+    "mean": 4.944,
+    "ci95": [
+      0.657,
+      9.077
+    ],
+    "wins": 247,
+    "ties": 529
+  }
+}

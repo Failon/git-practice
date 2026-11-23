@@ -1,7 +1,7 @@
 "use strict";
 const el=id=>document.getElementById(id),ctx=el("board").getContext("2d");
-let env,rng,timer;
-function pause(){clearInterval(timer);timer=null;}
+let env,rng,timer,nextRound;
+function pause(){clearInterval(timer);clearTimeout(nextRound);timer=null;}
 function draw(){
   env.board.open.forEach((open,p)=>{
     ctx.fillStyle=open?"#20393d":"#647f83";
@@ -38,12 +38,21 @@ function step(){
   if(env.done){pause();return;}
   const name=el("policy").value,opts=env.options();
   const action=EscapeGame.choose(opts,name==="distance"?name:EscapeWeights[name],rng);
-  env.step(opts[action].p);draw();if(env.done)pause();
+  env.step(opts[action].p);draw();
+  if(env.done){
+    const continuous=Boolean(timer);
+    pause();
+    if(continuous)nextRound=setTimeout(fresh,1800);
+  }
 }
-function fresh(){el("seed").value=crypto.getRandomValues(new Uint32Array(1))[0];reset();}
+function launch(){
+  reset();
+  if(el("policy").value!=="manual" && el("seed").value && el("seed").validity.valid)el("start").onclick();
+}
+function fresh(){el("seed").value=crypto.getRandomValues(new Uint32Array(1))[0];launch();}
 el("start").onclick=()=>{if(!timer&&!env.done){timer=setInterval(step,100);step();}};
 el("step").onclick=()=>{pause();step();};el("pause").onclick=pause;
-el("seed").onchange=reset;el("policy").onchange=reset;el("reset").onclick=reset;el("fresh").onclick=fresh;
+el("seed").onchange=launch;el("policy").onchange=launch;el("reset").onclick=launch;el("fresh").onclick=fresh;
 function move(delta){
   if(env.done||el("policy").value!=="manual")return;
   const p=env.player+delta;
