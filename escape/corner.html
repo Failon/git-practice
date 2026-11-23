@@ -1,0 +1,29 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Угол · Три призрака</title><style>*{box-sizing:border-box}body{margin:0;background:#111624;color:#f1f4ff;font:17px system-ui}main{max-width:760px;margin:0 auto;padding:22px}h1{font-size:clamp(32px,6vw,54px);margin:.25em 0}p{line-height:1.45}canvas{display:block;width:min(100%,440px);height:auto;border-radius:12px}button{border:1px solid #656e88;background:#29334b;color:white;font:inherit;padding:8px 13px;border-radius:8px}a{color:#b5f0de}output{display:block;margin:12px 0;font-weight:650;min-height:3em}</style>
+<main><a href="index.html">← Побег из лабиринта</a><h1>Угол</h1><p>Мятная фишка убегает сама. Сиреневый призрак метит столбец, янтарный — строку, розовый смыкает печать. Светлая клетка в углу — последнее укрытие.</p><canvas id="board" width="450" height="450"></canvas><output id="status"></output><button id="pause">Пауза</button> <button id="again">Повторить</button> <button id="fresh">Новый лабиринт</button><details><summary>Почему ловушка срабатывает?</summary><p>Каждые четыре хода сторона доступного квадрата уменьшается на одну клетку. После восьми циклов из поля 9 × 9 остаётся только нижняя правая клетка. На ходу 33 печать закрывает её. Беглец заранее рассчитывает, какой соседний шаг даст самый длинный безопасный маршрут. Генератор оставляет лестничный проход до угла.</p></details></main>
+<script src="game.js"></script><script src="corner.js"></script><script>
+const el=id=>document.getElementById(id),g=el("board").getContext("2d");
+let seed,room,t,p,timer;
+function ghost(col,row,color){
+ const x=col*50+25,y=row*50+26;g.fillStyle=color;g.beginPath();g.arc(x,y-2,12,Math.PI,0);g.lineTo(x+12,y+9);g.lineTo(x+6,y+6);g.lineTo(x,y+10);g.lineTo(x-6,y+6);g.lineTo(x-12,y+10);g.closePath();g.fill();g.fillStyle="#20213b";g.fillRect(x-6,y-4,3,4);g.fillRect(x+3,y-4,3,4);
+}
+function draw(){
+ const k=Math.min(8,Math.floor(t/4)),phase=t%4;
+ for(let i=0;i<81;i++){
+   const x=i%9,y=Math.floor(i/9);
+   g.fillStyle=!room.inside(i,t)||t===33?"#37253d":!room.open[i]?"#56647a":x===k&&phase>=1?"#79619b":y===k&&phase>=2?"#9c7c54":"#233348";
+   g.fillRect(x*50+1,y*50+1,48,48);
+ }
+ g.strokeStyle="#a4edd1";g.strokeRect(403,403,44,44);
+ ghost(k,0,"#c49bff");ghost(0,k,"#ffd293");ghost(8,0,"#ff9ab7");
+ g.beginPath();g.arc(p%9*50+25,Math.floor(p/9)*50+25,9,0,2*Math.PI);g.fillStyle=t===33?"#ff6786":"#a6f3d4";g.fill();
+ const cue=t===33?"Пойман в углу":t===32?"Осталась одна клетка":!t?"Начало раунда":["Печать замкнулась","Призрак метит столбец","Второй призрак метит строку","Третий призрак готовит печать"][phase];
+ el("status").textContent="Ход "+t+" / 33 · "+cue+" · Карта "+seed;
+}
+function stop(){clearInterval(timer);timer=null;}
+function play(){stop();el("pause").textContent="Пауза";timer=setInterval(()=>{
+ if(t<32)p=room.choice[t][p];t++;draw();if(t===33){stop();el("pause").textContent="Ещё раз";}
+},320);}
+function reset(){room=CornerScene.build(seed);p=0;t=0;draw();play();}
+function fresh(){seed=crypto.getRandomValues(new Uint32Array(1))[0];reset();}
+el("pause").onclick=()=>{if(t===33)reset();else if(timer){stop();el("pause").textContent="Продолжить";}else play();};el("again").onclick=reset;el("fresh").onclick=fresh;fresh();
+</script></html>
