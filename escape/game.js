@@ -26,6 +26,15 @@ const EscapeGame=(()=>{
     }
   }
   const distance=(a,b)=>Math.abs(a%size-b%size)+Math.abs(Math.floor(a/size)-Math.floor(b/size));
+  function captureRisk(board,guards,p){
+    if(guards.includes(p))return 1;
+    let safe=1;
+    for(const g of guards){
+      const moves=board.adjacent[g];
+      if(moves.includes(p))safe*=1-1/moves.length;
+    }
+    return 1-safe;
+  }
   function episode(seed,count=3){
     const board=build(seed),rng=random(seed^0x5ddc10);
     const state={board,player:board.starts[0],guards:board.starts.slice(1,1+count),tick:0,done:false,caught:false};
@@ -60,6 +69,6 @@ const EscapeGame=(()=>{
     }
     return sample(probabilities(options,policy),rng);
   }
-  return {episode,random,probabilities,sample,choose,horizon,size,distance};
+  return {captureRisk,episode,random,probabilities,sample,choose,horizon,size,distance};
 })();
 if(typeof module!=="undefined")module.exports=EscapeGame;
