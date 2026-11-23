@@ -37,7 +37,7 @@ function reset(){
 function step(){
   if(env.done){pause();return;}
   const name=el("policy").value,opts=env.options();
-  const action=EscapeGame.choose(opts,name==="distance"?name:EscapeWeights[name],rng);
+  const action=EscapeStrategies.action(env,opts,name,rng,EscapeWeights);
   env.step(opts[action].p);draw();
   if(env.done){
     const continuous=Boolean(timer);

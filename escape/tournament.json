@@ -1,0 +1,122 @@
+{
+  "criterion": "mean safe moves",
+  "selectionSeeds": [
+    300000,
+    300499
+  ],
+  "testSeeds": [
+    400000,
+    400999
+  ],
+  "selection": {
+    "initial": {
+      "mean": 31.284,
+      "full": 5
+    },
+    "distance": {
+      "mean": 153.168,
+      "full": 298
+    },
+    "stage1": {
+      "mean": 122.322,
+      "full": 190
+    },
+    "stage2": {
+      "mean": 149.814,
+      "full": 289
+    },
+    "stage3": {
+      "mean": 154.344,
+      "full": 295
+    },
+    "argmax": {
+      "mean": 164.406,
+      "full": 336
+    },
+    "risk": {
+      "mean": 155.832,
+      "full": 304
+    },
+    "risk-ppo": {
+      "mean": 165.118,
+      "full": 338
+    },
+    "graph": {
+      "mean": 144.304,
+      "full": 255
+    },
+    "graph-space": {
+      "mean": 150.328,
+      "full": 270
+    },
+    "graph-all": {
+      "mean": 142.08,
+      "full": 247
+    }
+  },
+  "winner": "risk-ppo",
+  "test": {
+    "initial": {
+      "mean": 31.27,
+      "full": 16
+    },
+    "distance": {
+      "mean": 156.501,
+      "full": 602
+    },
+    "stage1": {
+      "mean": 131.567,
+      "full": 419
+    },
+    "stage2": {
+      "mean": 148.919,
+      "full": 538
+    },
+    "stage3": {
+      "mean": 154.025,
+      "full": 566
+    },
+    "argmax": {
+      "mean": 165.362,
+      "full": 677
+    },
+    "risk": {
+      "mean": 156.645,
+      "full": 611
+    },
+    "risk-ppo": {
+      "mean": 165.444,
+      "full": 678
+    },
+    "graph": {
+      "mean": 149.85,
+      "full": 529
+    },
+    "graph-space": {
+      "mean": 153.665,
+      "full": 547
+    },
+    "graph-all": {
+      "mean": 147.302,
+      "full": 515
+    }
+  },
+  "cornerResults": {
+    "random": {
+      "mean": 4.138,
+      "perfect": 0
+    },
+    "nearest-corner": {
+      "mean": 11.307,
+      "perfect": 135
+    },
+    "one-step": {
+      "mean": 14.184,
+      "perfect": 128
+    },
+    "dp": {
+      "mean": 32,
+      "perfect": 1000
+    }
+  }
+}
