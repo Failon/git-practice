@@ -1,0 +1,55 @@
+{
+  "trainingSeeds": [
+    1,
+    3456
+  ],
+  "evaluationSeeds": [
+    100000,
+    100499
+  ],
+  "steps": 534868,
+  "stages": [
+    {
+      "guards": 1,
+      "episodes": 1152,
+      "steps": 171433
+    },
+    {
+      "guards": 2,
+      "episodes": 1152,
+      "steps": 185758
+    },
+    {
+      "guards": 3,
+      "episodes": 1152,
+      "steps": 177677
+    }
+  ],
+  "results": {
+    "initial": {
+      "meanSurvival": 31.186,
+      "fullRounds": 6,
+      "rounds": 500
+    },
+    "stage1": {
+      "meanSurvival": 123.606,
+      "fullRounds": 188,
+      "rounds": 500
+    },
+    "stage2": {
+      "meanSurvival": 140.064,
+      "fullRounds": 258,
+      "rounds": 500
+    },
+    "stage3": {
+      "meanSurvival": 151.308,
+      "fullRounds": 293,
+      "rounds": 500
+    },
+    "distance": {
+      "meanSurvival": 154.308,
+      "fullRounds": 291,
+      "rounds": 500
+    }
+  }
+}
